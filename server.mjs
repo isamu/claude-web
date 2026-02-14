@@ -22,6 +22,12 @@ const server = createServer((req, res) => {
     return;
   }
 
+  if (req.method === "GET" && req.url === "/api/info") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ cwd: CWD }));
+    return;
+  }
+
   res.writeHead(404);
   res.end("Not Found");
 });
@@ -30,8 +36,8 @@ function handleChat(req, res) {
   let body = "";
   req.on("data", (chunk) => { body += chunk; });
   req.on("end", () => {
-    const { message, continueSession } = JSON.parse(body);
-    const args = buildClaudeArgs(message, continueSession);
+    const { message, continueSession, allowedTools } = JSON.parse(body);
+    const args = buildClaudeArgs(message, continueSession, allowedTools);
 
     const BLOCKED_VARS = ["CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT"];
     const env = Object.fromEntries(
@@ -140,13 +146,16 @@ function formatEvent(obj) {
   return null;
 }
 
-function buildClaudeArgs(message, continueSession) {
+function buildClaudeArgs(message, continueSession, allowedTools) {
   const args = [];
   if (continueSession) {
     args.push("-c");
   }
   args.push("-p", message);
   args.push("--output-format", "stream-json", "--verbose");
+  if (allowedTools && allowedTools.length > 0) {
+    args.push("--allowedTools", ...allowedTools);
+  }
   return args;
 }
 

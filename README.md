@@ -61,9 +61,10 @@ Browser renders events in real-time
 
 ### `server.mjs`
 
-HTTP server with two endpoints:
+HTTP server with three endpoints:
 
 - `GET /` — Serves `index.html`
+- `GET /api/info` — Returns server info (working directory)
 - `POST /api/chat` — Spawns `claude` CLI and streams the response
 
 Key implementation details:
@@ -83,9 +84,10 @@ Single-file chat UI (HTML + CSS + JS, no build step):
 
 ## Limitations
 
-- No token-level streaming — Claude Code's `-p` mode outputs complete messages per event, not individual tokens. Multi-step tasks (tool use) do stream event-by-event.
-- Single request at a time — concurrent requests are not supported.
-- No authentication — intended for local use only.
+- **Read-only by default** — `claude -p` runs non-interactively with stdin closed, so permission prompts cannot be answered. Tools that require permission (Write, Edit, Bash, etc.) are denied automatically. Read, Glob, Grep, and other read-only tools work normally. Toggle **Write: ON** in the header to enable Write, Edit, and Bash via `--allowedTools`.
+- **No token-level streaming** — Claude Code's `-p` mode outputs complete messages per event, not individual tokens. Multi-step tasks (tool use) do stream event-by-event.
+- **Single request at a time** — concurrent requests are not supported.
+- **No authentication** — intended for local use only.
 
 ## Port
 

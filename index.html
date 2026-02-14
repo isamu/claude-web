@@ -22,14 +22,18 @@
     button { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
     #send { background: #53c28b; color: #1a1a2e; font-weight: 600; }
     #send:disabled { opacity: 0.5; cursor: not-allowed; }
-    #continue-toggle { background: none; border: 1px solid #0f3460; color: #94a3b8; font-size: 12px; padding: 6px 12px; }
-    #continue-toggle.active { border-color: #53c28b; color: #53c28b; }
+    .toggle-btn { background: none; border: 1px solid #0f3460; color: #94a3b8; font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    .toggle-btn.active { border-color: #53c28b; color: #53c28b; }
+    .toggle-btn.danger.active { border-color: #f87171; color: #f87171; }
   </style>
 </head>
 <body>
   <div id="header">
-    Claude Web — experimental
-    <button id="continue-toggle" onclick="toggleContinue()">Continue: OFF</button>
+    <span>Claude Web — experimental</span>
+    <span id="cwd-label" style="color:#53c28b;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <span style="flex:1"></span>
+    <button class="toggle-btn" id="continue-toggle" onclick="toggleContinue()">Continue: OFF</button>
+    <button class="toggle-btn danger" id="write-toggle" onclick="toggleWrite()">Write: OFF</button>
   </div>
   <div id="messages"></div>
   <div id="input-area">
@@ -38,13 +42,25 @@
   </div>
   <script>
     let continueSession = false;
+    let writeEnabled = false;
     let sending = false;
+
+    fetch("/api/info").then(r => r.json()).then(info => {
+      document.getElementById("cwd-label").textContent = info.cwd;
+    });
 
     function toggleContinue() {
       continueSession = !continueSession;
       const btn = document.getElementById("continue-toggle");
       btn.textContent = `Continue: ${continueSession ? "ON" : "OFF"}`;
       btn.classList.toggle("active", continueSession);
+    }
+
+    function toggleWrite() {
+      writeEnabled = !writeEnabled;
+      const btn = document.getElementById("write-toggle");
+      btn.textContent = `Write: ${writeEnabled ? "ON" : "OFF"}`;
+      btn.classList.toggle("active", writeEnabled);
     }
 
     function handleKey(e) {
@@ -105,7 +121,11 @@
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, continueSession }),
+          body: JSON.stringify({
+            message,
+            continueSession,
+            allowedTools: writeEnabled ? ["Write", "Edit", "Bash"] : [],
+          }),
         });
 
         const reader = res.body.getReader();
